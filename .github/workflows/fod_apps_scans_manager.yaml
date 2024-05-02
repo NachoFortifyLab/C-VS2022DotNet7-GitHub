@@ -137,8 +137,10 @@ jobs:
       Technology_Stack: ${{ steps.DefinesFODAppTechStack.outputs.tech_stack }}
       Single_Version_Language_Level_ID: ${{ steps.DefinesFODAppTechStack.outputs.language_level_id }}
       Single_Version_Language_Level: ${{ steps.DefinesFODAppTechStack.outputs.language_level }}
-      Multi_Version_Language_Level_ID: ${{ steps.DefinesMultiLanguageLevelID.outputs.language_level_id }}
-      Multi_Version_Language_Level: ${{ steps.DefinesMultiLanguageLevelID.outputs.language_level }}
+      Java_App_Language_Level_ID: ${{ steps.DefinesJavaLanguageLevelID.outputs.language_level_id }}
+      Java_App_Language_Level: ${{ steps.DefinesJavaLanguageLevelID.outputs.language_level }}
+      DotNet_App_Language_Level_ID: ${{ steps.DefinesDoNetLanguageLevelID.outputs.language_level_id }}
+      DotNet_App_Language_Level: ${{ steps.DefinesDotNetLanguageLevelID.outputs.language_level }}
       Scan_Java_Version: ${{ steps.DefinesJavaVersionFortifyTasks.outputs.scan_java_version }}
       Language_Level_ID: ${{ steps.LanguageLevelIDChecker.outputs.language_level_id }}
       Language_Level: ${{ steps.LanguageLevelIDChecker.outputs.language_level }}
@@ -166,6 +168,7 @@ jobs:
             echo "::set-output name=scan_java_version::$Java_Version"
           else
             echo "The repository language is not Java nor Kotlin nor J2EE, FOD SAST Scan will use the default Java version to run the scan"
+            
             echo "FOD Scan java version has been saved"
             
             # Saves the scan java version as the output to be used for the FOD SAST Scan (Default for none Java repositories)
@@ -411,8 +414,8 @@ jobs:
 
     # Defines the Java Version to be used for FOD SAST Scan Options
     - name: Defines Java Application Language Level and Language Level ID
-      id: DefinesMultiLanguageLevelID
-      # This step will run when the repository language is Java or Kotlin or J2EE
+      id: DefinesJavaLanguageLevelID
+      # This step will run when the repository language is Java
       if: ${{ needs.Get-GitHub-Repo-Information.outputs.Repo_Language == 'Java' }}
       run: |
           echo "Proceeding to define $Repo_Language version $Java_Version Language Level and Language ID of the FOD Application..."
@@ -517,6 +520,11 @@ jobs:
         Repo_Language: ${{ needs.Get-GitHub-Repo-Information.outputs.Repo_Language }}
         Java_Version: ${{ needs.Define-Java-Configuration.outputs.Java_Version }}
 
+    - name: Defines .NET Application Language Level and Language Level ID
+      id: DefinesDotNetLanguageLevelID
+      run: |
+          echo ""
+      
     # Checks the Language Level and Level ID.
     # If the repository language is a multi version language it will use the corresponding version of the technology stack
     # based on the data from technology stack configuration step.
@@ -524,28 +532,52 @@ jobs:
       id: LanguageLevelIDChecker
       run: |
           echo "Proceeding to check the Language Level and ID of the FOD Application..."
-         
-          # Checks if the repositroy language is not a multi version language
-          if [[ $Repo_Language != 'Java' && $Repo_Language != 'Kotlin' && $Repo_Language != 'J2EE' && $Repo_Language != 'C#' && $Repo_Language != 'Python' ]]; then
-            echo "Repository language is: $Repo_Language"
 
-            echo "Language Level and Language Level ID have been saved"
-            
-            echo "::set-output name=language_level_id::${{ steps.DefinesFODAppTechStack.outputs.language_level_id }}"
-            
-            echo "::set-output name=language_level::${{ steps.DefinesFODAppTechStack.outputs.language_level }}"
-          else
-            echo "Repository language is: $Repo_Language"
+          case $Repo_Language in
+            # If the repository language is Java or Kotlin or J2EE it saves the Language Level and Language Level ID values related to those languages
+            "Java" | "J2EE" | "Kotlin")
+              echo "Repository language is: $Repo_Language version $Java_Version which is a multi version language"
 
-            echo "Language Level and Language Level ID have been saved"
+              echo "Language Level and Language Level ID according to the $Repo_Language version $Java_Version of the repository have been saved"
             
-            echo "::set-output name=language_level_id::${{ steps.DefinesMultiLanguageLevelID.outputs.language_level_id }}"
+              echo "::set-output name=language_level_id::${{ steps.DefinesJavaLanguageLevelID.outputs.language_level_id }}"
+
+              echo "::set-output name=language_level::${{ steps.DefinesJavaLanguageLevelID.outputs.language_level }}"
+              ;;
+            # If the repository language is C# it saves the Language Level and Language Level ID values related to that language  
+            "C#")
+              echo "Repository language is: $Repo_Language version $DoNet_Version which is a multi version language"
+
+              echo "Language Level and Language Level ID according to the $Repo_Language version $DoNet_Version of the repository have been saved"
             
-            echo "::set-output name=language_level::${{ steps.DefinesMultiLanguageLevelID.outputs.language_level }}"
-          fi
+              echo "::set-output name=language_level_id::${{ steps.DefinesDotNetLanguageLevelID.outputs.language_level_id }}"
+
+              echo "::set-output name=language_level::${{ steps.DefinesDotNetLanguageLevelID.outputs.language_level }}"
+              ;;
+            # If the repository language is C# it saves the Language Level and Language Level ID values related to that language
+            "Python")
+              echo "Repository language is: $Repo_Language version $Python_Version which is a multi version language"
+
+              echo "Language Level and Language Level ID according to the $Repo_Language version $Python_Version of the repository have been saved"
+
+              echo "::set-output name=language_level_id::${{ steps.DefinesPythonLanguageLevelID.outputs.language_level_id }}"
+
+              echo "::set-output name=language_level::${{ steps.DefinesPythonLanguageLevelID.outputs.language_level }}"
+              ;;
+            *)
+              echo "Repository language is: $Repo_Language"
+
+              echo "Language Level and Language Level ID have been saved"
+            
+              echo "::set-output name=language_level_id::${{ steps.DefinesFODAppTechStack.outputs.language_level_id }}"
+            
+              echo "::set-output name=language_level::${{ steps.DefinesFODAppTechStack.outputs.language_level }}"
+              ;;
+          esac
       env: 
         # Environment variables for this step
         Repo_Language: ${{ needs.Get-GitHub-Repo-Information.outputs.Repo_Language }}
+        Java_Version: ${{ needs.Define-Java-Configuration.outputs.Java_Version }}
       
   # FOD Application Management Job
   FOD-Application-Management:
