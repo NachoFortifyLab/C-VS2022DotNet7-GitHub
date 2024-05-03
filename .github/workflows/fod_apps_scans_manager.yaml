@@ -39,7 +39,6 @@ jobs:
     # Saves the data of the repository language to be used in the next jobs
     outputs:
       Repo_Language: ${{ steps.RepoInfo.outputs.repo_language }}
-      Repo_Branch: ${{ steps.RepoInfo.outputs.repo_branch }}
 
     steps:
     # Checks out the source code.
@@ -124,6 +123,57 @@ jobs:
           echo "is_gradle:                        [${{ steps.java_info.outputs.is_gradle }}]"
           echo "is_maven:                         [${{ steps.java_info.outputs.is_maven }}]"
           echo "builder_name:                     [${{ steps.java_info.outputs.builder_name }}]"
+          
+  # Defines DotNet Configuration Job
+  Define-DotNet-Configuration:
+    # Indicates that this job requieres Get GitHub Repository Data Job to be completed in order to run
+    needs: Get-GitHub-Repo-Information
+    runs-on: ubuntu-latest
+    # Saves the java version, the builder data and builder name to be used in the sast scan options and java configuration steps
+    outputs:
+      DotNet_Version: ${{ steps.dotnet_info.outputs.dotnet_version }}
+      DotNetCore_Version: ${{ steps.dotnet_info.outputs.dotnetcore_version }}
+      DotNetASP_Version: ${{ steps.dotnet_info.outputs.dotnetasp_version }}
+      Is_DotNet: ${{ steps.dotnet_info.outputs.is_dotnet }}
+      Is_DotNetCore: ${{ steps.dotnet_info.outputs.is_dotnetcore }}
+      Is_DotNetASP: ${{ steps.dotnet_info.outputs.is_dotnetasp }}
+      Builder_Name: ${{ steps.dotnet_info.outputs.builder_name }}
+      
+    steps:
+    # Checks out the source code.
+    - name: Checks Out the Source Code
+      uses: actions/checkout@v3
+      
+    # Gets dotnet version, the builder name and builder data from the c# repository
+    - name: "Reads DotNet Info"
+      id: "dotnet_info"
+      if: ${{ needs.Get-GitHub-Repo-Information.outputs.Repo_Language == 'C#' }}
+      run: |
+          echo "Proceeding to get the DotNet repository info..."
+
+          # Checks if the repository has .csproj or .sln files in the repo directory
+          if find . \( -name "*.csproj" -o -name "*.sln" \) -print -quit | grep -q .; then
+            echo ".Net project files have been found. This repository uses .NET technology stack."
+
+            echo "Proceeding to check if the repository has .Net Core files..."
+            
+            for file in $(find . -name "*.csproj"); do
+              if grep -q '<TargetFramework>netcoreapp' "$file"; then
+                echo ".Net Core project file have been found: $file"
+              fi
+
+              echo "::set-output name=is_dotnetcore::true"
+            done
+            echo "There aren't any .Net Core project files in the repository."
+
+            echo "::set-output name=is_dotnetcore::false"
+            
+            echo "::set-output name=is_dotnet::true"
+          else
+            echo "No .Net project files have been found. This repository is not use .Net technology stack."
+
+            echo "::set-output name=is_dotnet::false"
+          fi
           
   # Repository Technology Stack Management Job
   Repository-Technology-Stack-Management:
@@ -412,7 +462,7 @@ jobs:
         Repo_Language: ${{ needs.Get-GitHub-Repo-Information.outputs.Repo_Language }}
         Java_Version: ${{ needs.Define-Java-Configuration.outputs.Java_Version }}
 
-    # Defines the Java Version to be used for FOD SAST Scan Options
+    # Defines the Java Application Language Level and Language Level ID
     - name: Defines Java Application Language Level and Language Level ID
       id: DefinesJavaLanguageLevelID
       # This step will run when the repository language is Java
@@ -520,6 +570,7 @@ jobs:
         Repo_Language: ${{ needs.Get-GitHub-Repo-Information.outputs.Repo_Language }}
         Java_Version: ${{ needs.Define-Java-Configuration.outputs.Java_Version }}
 
+    # Defines the C# Application Language Level and Language Level ID
     - name: Defines .NET Application Language Level and Language Level ID
       id: DefinesDotNetLanguageLevelID
       run: |
@@ -528,6 +579,7 @@ jobs:
     # Checks the Language Level and Level ID.
     # If the repository language is a multi version language it will use the corresponding version of the technology stack
     # based on the data from technology stack configuration step.
+    # If is not a multi version language it will use the default value.
     - name: Checks Language ID and Language Level of the FOD Application
       id: LanguageLevelIDChecker
       run: |
@@ -564,6 +616,7 @@ jobs:
 
               echo "::set-output name=language_level::${{ steps.DefinesPythonLanguageLevelID.outputs.language_level }}"
               ;;
+            # If the repository language is a non multi version language it saves the Language Level and Language Level ID default values from first step
             *)
               echo "Repository language is: $Repo_Language"
 
