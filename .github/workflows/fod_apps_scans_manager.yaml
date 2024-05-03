@@ -129,14 +129,12 @@ jobs:
     # Indicates that this job requieres Get GitHub Repository Data Job to be completed in order to run
     needs: Get-GitHub-Repo-Information
     runs-on: ubuntu-latest
-    # Saves the java version, the builder data and builder name to be used in the sast scan options and java configuration steps
+    # Saves the dotnet/dotnetcore version, the builder data and builder name to be used in the sast scan options
     outputs:
       DotNet_Version: ${{ steps.dotnet_info.outputs.dotnet_version }}
       DotNetCore_Version: ${{ steps.dotnet_info.outputs.dotnetcore_version }}
-      DotNetASP_Version: ${{ steps.dotnet_info.outputs.dotnetasp_version }}
       Is_DotNet: ${{ steps.dotnet_info.outputs.is_dotnet }}
       Is_DotNetCore: ${{ steps.dotnet_info.outputs.is_dotnetcore }}
-      Is_DotNetASP: ${{ steps.dotnet_info.outputs.is_dotnetasp }}
       Builder_Name: ${{ steps.dotnet_info.outputs.builder_name }}
       
     steps:
@@ -147,6 +145,7 @@ jobs:
     # Gets dotnet version, the builder name and builder data from the c# repository
     - name: "Reads DotNet Info"
       id: "dotnet_info"
+      # This step will run when the repository language is C#
       if: ${{ needs.Get-GitHub-Repo-Information.outputs.Repo_Language == 'C#' }}
       run: |
           echo "Proceeding to get the DotNet repository info..."
@@ -174,7 +173,39 @@ jobs:
 
             echo "::set-output name=is_dotnet::false"
           fi
+
+    # Checks the dotnet version
+    - name: Check .NET version
+      # This step will run when the C# repository is build on .NET
+      if: ${{ steps.dotnet_info.outputs.is_dotnet == 'true' }}
+      id: dotnet_version_check
+      continue-on-error: true
+      run: |
+          echo "Proceeding to check the dotnet version..."
           
+          dotnet --version
+
+     # Checks the dotnet core version
+    - name: Check .NET Core version
+      id: dotnet_core_version_check
+      # This step will run when the C# repository is build on .NET Core
+      if: ${{ steps.dotnet_info.outputs.is_dotnetcore == 'true' }}
+      continue-on-error: true
+      run: |
+          echo "Proceeding to check the dotnet core version..."
+          dotnet --list-sdks
+          
+      # Prints the dotnet info from previous steps
+    - name: "Prints DotNet Version Info"
+      # This step will run when the repository language is C#
+      if: ${{ needs.Get-GitHub-Repo-Information.outputs.Repo_Language == 'C#' }}
+      run: |
+          echo "dotnet_version:                     [${{ steps.dotnet_info.outputs.dotnet_version }}]"
+          echo "dotnetcore_version:                 [${{ steps.dotnet_info.outputs.dotnetcore_version }}]"
+          echo "is_dotnet:                          [${{ steps.dotnet_info.outputs.is_dotnet }}]"
+          echo "is_dotnetcore:                      [${{ steps.dotnet_info.outputs.is_dotnetcore }}]"
+          echo "builder_name:                       [${{ steps.dotnet_info.outputs.builder_name }}]"
+              
   # Repository Technology Stack Management Job
   Repository-Technology-Stack-Management:
     # Indicates that this job requieres Get GitHub Repository Data Job to be completed in order to run
@@ -403,6 +434,17 @@ jobs:
                 # Sets technology stack variable dynamically to VBScript if the repository is build in Visual Basic Script language
                 echo "::set-output name=tech_stack::VBScript"
                 ;;
+              "Classic ASP")
+                echo "The Technology Stack from the repository is ASP"
+
+                echo "Technology Stack and Technology Stack ID have been saved"
+                
+                # Sets technology stack id variable dynamically to 14 if the repository is build in Visual Basic Script language
+                echo "::set-output name=tech_stack_id::3"
+              
+                # Sets technology stack variable dynamically to ASP if the repository is build in Visual Basic Script language
+                echo "::set-output name=tech_stack::ASP"
+                ;; 
               *)
                 echo "Language not found on Fortify On Demand technology stack options"
 
