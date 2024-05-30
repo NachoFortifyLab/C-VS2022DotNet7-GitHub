@@ -161,16 +161,39 @@ jobs:
                 echo ".Net Core project file have been found: $file"
               fi
 
+              # Saves the boolean value of this variable
               echo "::set-output name=is_dotnetcore::true"
+
+              echo "Proceeding to check dot net core version from the project..."
+
+              # Find all .csproj files and read the TargetFramework or TargetFrameworks
+              for csproj in $(find . -name '*.csproj'); do
+                echo "Reading .NET Core version from $csproj file"
+                
+                version=$(grep -oPm1 "(?<=<TargetFramework>)[^<]+" $csproj || grep -oPm1 "(?<=<TargetFrameworks>)[^<]+" $csproj)
+            
+                # Extracts only the numeric part from the version
+                version_number=$(echo $version | grep -oP '\d+(\.\d+)+')
+                
+                echo "Found .NET Core version: $version_number"
+                
+                # Saves the .Net Core version number if the variable is not empty
+                if [ ! -z "$version_number" ]; then
+                  echo "::set-output name=dotnetcore_version::$numeric_version"
+                  break
+                fi
+              done
             done
             
             echo "There aren't any .Net Core project files in the repository."
 
+            # Saves the boolean value of this variable
             echo "::set-output name=is_dotnetcore::false"
-            
+
+            # Saves the boolean value of this variable
             echo "::set-output name=is_dotnet::true"
 
-            echo "Proceeding to check dot net version fromm the project..."
+            echo "Proceeding to check dot net version from the project..."
 
             # Find all .csproj files and reads the TargetFramework or TargetFrameworks
             for csproj in $(find . -name '*.csproj'); do
@@ -182,8 +205,9 @@ jobs:
               version_number=$(echo $version | grep -oP '\d+(\.\d+)+')
               
               echo "Found .NET version: $version_number"
-              
-              if [ ! -z "$version" ]; then
+
+              # Saves the .Net version number if the variable is not empty
+              if [ ! -z "$version_number" ]; then
                 echo "::set-output name=dotnet_version::$version_number"
                 break
               fi
@@ -191,6 +215,7 @@ jobs:
           else
             echo "No .Net project files have been found. This repository does not use .Net technology stack."
 
+            # Saves the boolean value of this variable
             echo "::set-output name=is_dotnet::false"
           fi
           
