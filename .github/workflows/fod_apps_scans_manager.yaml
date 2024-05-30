@@ -152,71 +152,81 @@ jobs:
 
           # Checks if the repository has .csproj or .sln files in the repository directory
           if find . \( -name "*.csproj" -o -name "*.sln" \) -print -quit | grep -q .; then
-            echo ".Net project files have been found. This repository uses .NET technology stack."
+            echo ".Net project files have been found."
 
-            echo "Proceeding to check if the repository has .Net Core files..."
-            
+            echo "Proceeding to check if the repository uses .NET technology stack or .NET Core technology stack...."
+
             for file in $(find . -name "*.csproj"); do
-              if grep -q '<TargetFramework>netcoreapp' "$file"; then
-                echo ".Net Core project file have been found: $file"
-              fi
+              if grep -q '<TargetFramework>net' "$file"; then
+                echo ".NET project file have been found: $file"
 
-              # Saves the boolean value of this variable
-              echo "::set-output name=is_dotnetcore::true"
-
-              echo "Proceeding to check dot net core version from the project..."
-
-              # Find all .csproj files and read the TargetFramework or TargetFrameworks
-              for csproj in $(find . -name '*.csproj'); do
-                echo "Reading .NET Core version from $csproj file"
+                echo "The repository uses .NET technology stack"
                 
-                version=$(grep -oPm1 "(?<=<TargetFramework>)[^<]+" $csproj || grep -oPm1 "(?<=<TargetFrameworks>)[^<]+" $csproj)
+                # Sets dotnetcore boolean variable to false because the repository uses .NET technology stack
+                echo "::set-output name=is_dotnetcore::false"
+
+                # Sets dotnet boolean variable to true because the repository uses .NET technology stack
+                echo "::set-output name=is_dotnet::true"
+
+                echo "Proceeding to check dot net version from the project..."
+
+                # Find all .csproj files and reads the TargetFramework or TargetFrameworks
+                for csproj in $(find . -name '*.csproj'); do
+                  echo "Reading .NET version from $csproj file"
+              
+                  version=$(grep -oPm1 "(?<=<TargetFramework>)[^<]+" $csproj || grep -oPm1 "(?<=<TargetFrameworks>)[^<]+" $csproj)
+              
+                  # Extracts the numer from the version tag
+                  version_number=$(echo $version | grep -oP '\d+(\.\d+)+')
+              
+                  echo "Found .NET version: $version_number"
+
+                  # Saves the .Net version number if the variable is not empty
+                  if [ ! -z "$version_number" ]; then
+                    echo "::set-output name=dotnet_version::$version_number"
+                    break
+                  fi
+                done
+              elif grep -q '<TargetFramework>netcoreapp' "$file"; then
+                echo ".NET Core project file have been found: $file"
+
+                echo "The repository uses .NET Core technology stack"
+                
+                # Sets dotnetcore boolean variable to true because the repository uses .NET Core technology stack
+                echo "::set-output name=is_dotnetcore::true"
+
+                # Sets dotnet boolean variable to false because the repository uses .NET Core technology stack
+                echo "::set-output name=is_dotnet::false"
+
+                echo "Proceeding to check dot net core version from the project..."
+
+                # Finds all .csproj files and reads the TargetFramework or TargetFrameworks
+                for csproj in $(find . -name '*.csproj'); do
+                  echo "Reading .NET Core version from $csproj file"
+                
+                  version=$(grep -oPm1 "(?<=<TargetFramework>)[^<]+" $csproj || grep -oPm1 "(?<=<TargetFrameworks>)[^<]+" $csproj)
             
-                # Extracts only the numeric part from the version
-                version_number=$(echo $version | grep -oP '\d+(\.\d+)+')
+                  # Extracts only the numeric part from the version
+                  version_number=$(echo $version | grep -oP '\d+(\.\d+)+')
                 
-                echo "Found .NET Core version: $version_number"
+                  echo "Found .NET Core version: $version_number"
                 
-                # Saves the .Net Core version number if the variable is not empty
-                if [ ! -z "$version_number" ]; then
-                  echo "::set-output name=dotnetcore_version::$numeric_version"
-                  break
-                fi
-              done
-            done
-            
-            echo "There aren't any .Net Core project files in the repository."
-
-            # Saves the boolean value of this variable
-            echo "::set-output name=is_dotnetcore::false"
-
-            # Saves the boolean value of this variable
-            echo "::set-output name=is_dotnet::true"
-
-            echo "Proceeding to check dot net version from the project..."
-
-            # Find all .csproj files and reads the TargetFramework or TargetFrameworks
-            for csproj in $(find . -name '*.csproj'); do
-              echo "Reading .NET version from $csproj file"
-              
-              version=$(grep -oPm1 "(?<=<TargetFramework>)[^<]+" $csproj || grep -oPm1 "(?<=<TargetFrameworks>)[^<]+" $csproj)
-              
-              # Extracts the numer from the version tag
-              version_number=$(echo $version | grep -oP '\d+(\.\d+)+')
-              
-              echo "Found .NET version: $version_number"
-
-              # Saves the .Net version number if the variable is not empty
-              if [ ! -z "$version_number" ]; then
-                echo "::set-output name=dotnet_version::$version_number"
-                break
+                  # Saves the .Net Core version number if the variable is not empty
+                  if [ ! -z "$version_number" ]; then
+                    echo "::set-output name=dotnetcore_version::$version_number"
+                    break
+                  fi
+                done
               fi
             done
           else
-            echo "No .Net project files have been found. This repository does not use .Net technology stack."
+            echo "No .Net project files have been found. This repository does not use .NET nor .NET Core technology stacks."
 
-            # Saves the boolean value of this variable
+            # Sets dotnet boolean variable to false because the repository not uses .NET nor .NET Core technology stacks
             echo "::set-output name=is_dotnet::false"
+
+            # Sets dotnet boolean variable to false because the repository not uses .NET nor .NET Core technology stacks
+            echo "::set-output name=is_dotnetcore::false"
           fi
           
       # Prints the dotnet info from previous steps
