@@ -150,7 +150,7 @@ jobs:
       run: |
           echo "Proceeding to get the DotNet repository info..."
 
-          # Checks if the repository has .csproj or .sln files in the repo directory
+          # Checks if the repository has .csproj or .sln files in the repository directory
           if find . \( -name "*.csproj" -o -name "*.sln" \) -print -quit | grep -q .; then
             echo ".Net project files have been found. This repository uses .NET technology stack."
 
@@ -163,37 +163,17 @@ jobs:
 
               echo "::set-output name=is_dotnetcore::true"
             done
+            
             echo "There aren't any .Net Core project files in the repository."
 
             echo "::set-output name=is_dotnetcore::false"
             
             echo "::set-output name=is_dotnet::true"
           else
-            echo "No .Net project files have been found. This repository is not use .Net technology stack."
+            echo "No .Net project files have been found. This repository does not use .Net technology stack."
 
             echo "::set-output name=is_dotnet::false"
           fi
-
-    # Checks the dotnet version
-    - name: Check .NET version
-      # This step will run when the C# repository is build on .NET
-      if: ${{ steps.dotnet_info.outputs.is_dotnet == 'true' }}
-      id: dotnet_version_check
-      continue-on-error: true
-      run: |
-          echo "Proceeding to check the dotnet version..."
-          
-          dotnet --version
-
-     # Checks the dotnet core version
-    - name: Check .NET Core version
-      id: dotnet_core_version_check
-      # This step will run when the C# repository is build on .NET Core
-      if: ${{ steps.dotnet_info.outputs.is_dotnetcore == 'true' }}
-      continue-on-error: true
-      run: |
-          echo "Proceeding to check the dotnet core version..."
-          dotnet --list-sdks
           
       # Prints the dotnet info from previous steps
     - name: "Prints DotNet Version Info"
