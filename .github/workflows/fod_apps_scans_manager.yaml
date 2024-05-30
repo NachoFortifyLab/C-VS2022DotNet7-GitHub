@@ -172,16 +172,19 @@ jobs:
 
             echo "Proceeding to check dot net version fromm the project..."
 
-            # Find all .csproj files and read the TargetFramework or TargetFrameworks
+            # Find all .csproj files and reads the TargetFramework or TargetFrameworks
             for csproj in $(find . -name '*.csproj'); do
               echo "Reading .NET version from $csproj file"
               
               version=$(grep -oPm1 "(?<=<TargetFramework>)[^<]+" $csproj || grep -oPm1 "(?<=<TargetFrameworks>)[^<]+" $csproj)
               
-              echo "Found .NET version: $version"
+              # Extracts the numer from the version tag
+              version_number=$(echo $version | grep -oP '\d+(\.\d+)+')
+              
+              echo "Found .NET version: $version_number"
               
               if [ ! -z "$version" ]; then
-                echo "::set-output name=dotnet-version::$version"
+                echo "::set-output name=dotnet-version::$version_number"
                 break
               fi
             done
