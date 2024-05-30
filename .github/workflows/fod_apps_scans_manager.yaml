@@ -184,7 +184,7 @@ jobs:
               echo "Found .NET version: $version_number"
               
               if [ ! -z "$version" ]; then
-                echo "::set-output name=dotnet-version::$version_number"
+                echo "::set-output name=dotnet_version::$version_number"
                 break
               fi
             done
