@@ -169,6 +169,22 @@ jobs:
             echo "::set-output name=is_dotnetcore::false"
             
             echo "::set-output name=is_dotnet::true"
+
+            echo "Proceeding to check dot net version fromm the project..."
+
+            # Find all .csproj files and read the TargetFramework or TargetFrameworks
+            for csproj in $(find . -name '*.csproj'); do
+              echo "Reading .NET version from $csproj file"
+              
+              version=$(grep -oPm1 "(?<=<TargetFramework>)[^<]+" $csproj || grep -oPm1 "(?<=<TargetFrameworks>)[^<]+" $csproj)
+              
+              echo "Found .NET version: $version"
+              
+              if [ ! -z "$version" ]; then
+                echo "::set-output name=dotnet-version::$version"
+                break
+              fi
+            done
           else
             echo "No .Net project files have been found. This repository does not use .Net technology stack."
 
