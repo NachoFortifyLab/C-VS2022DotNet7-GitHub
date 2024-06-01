@@ -228,6 +228,8 @@ jobs:
             # Sets dotnet boolean variable to false because the repository not uses .NET nor .NET Core technology stacks
             echo "::set-output name=is_dotnetcore::false"
           fi
+
+          
           
       # Prints the dotnet info from previous steps
     - name: "Prints DotNet Version Info"
@@ -243,7 +245,7 @@ jobs:
   # Repository Technology Stack Management Job
   Repository-Technology-Stack-Management:
     # Indicates that this job requieres Get GitHub Repository Data Job to be completed in order to run
-    needs: [Get-GitHub-Repo-Information, Define-Java-Configuration]
+    needs: [Get-GitHub-Repo-Information, Define-Java-Configuration, Define-DotNet-Configuration]
     runs-on: ubuntu-latest
     # Saves the data of the technology stack based on the repository language 
     # to be used in the sast scan options, sast scan build packages and java configuration steps.
