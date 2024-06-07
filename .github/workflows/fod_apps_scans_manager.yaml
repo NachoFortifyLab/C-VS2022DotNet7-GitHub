@@ -97,16 +97,16 @@ jobs:
       id: FODApiAuth
       run: |
           echo "Proceeding to get a bearer token for Fortify On Demand API requests..."
-
+          
           # Sends a request to generate the bearer token
-          Generate_FOD_Bearer_Token_Request=$(curl --request POST '${FOD_API_URL}/oauth/token' \
+          Generate_FOD_Bearer_Token_Request=$(curl --request POST "${FOD_API_URL}/oauth/token" \
             --header 'Content-Type: application/x-www-form-urlencoded' \
-            --data-urlencode 'scope=api-tenant' \
-            --data-urlencode 'grant_type=client_credentials' \
-            --data-urlencode 'client_id=${FOD_CLIENT_ID}' \
-            --data-urlencode 'client_secret=${FOD_CLIENT_SECRET}'
+            --data-urlencode "scope=api-tenant" \
+            --data-urlencode "grant_type=client_credentials" \
+            --data-urlencode "client_id=${FOD_CLIENT_ID}" \
+            --data-urlencode "client_secret=${FOD_CLIENT_SECRET}" \
             -w "%{http_code}" \
-            -o "get-api-oauth-output.json") # Saves the results of the query to a file
+            -o "get-api-oauth-output.json")
 
           # Saves the POST request's status code
           Generate_Token_Request_Status_Code=$(echo $Generate_FOD_Bearer_Token_Request | tr -d '\n' | sed -e 's/.*Status Code://')
