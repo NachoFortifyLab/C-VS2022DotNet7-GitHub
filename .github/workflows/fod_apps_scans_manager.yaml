@@ -79,6 +79,44 @@ jobs:
       env:
         # Environment variables for this step
         REPO_API_URL: "https://api.github.com/repos/${{ github.repository }}"
+  
+  # FOD API Authentication Job
+  FOD-API-Authentication:
+    runs-on: ubuntu-latest
+    # Saves the data of the Fortify On Demand Bearer Token to be used in the next jobs
+    outputs:
+      FOD_BEARER_TOKEN: ${{ steps.FODApiAuth.outputs.fod_bearer_token }}
+
+    steps:
+    # Checks out the source code.
+    - name: Checks Out the Source Code
+      uses: actions/checkout@v3
+
+    # Generates a bearer token for the API requests of FOD
+    - name: Generates a Bearer Token for Fortify On Demand API requests
+      id: FODApiAuth
+      run: |
+          echo "Proceeding to get a bearer token for Fortify On Demand API requests..."
+
+          # Sends a request to generate the bearer token
+          Generate_FOD_Bearer_Token_Request=$(curl --request POST '${FOD_API_URL}/oauth/token' \
+            --header 'Content-Type: application/x-www-form-urlencoded' \
+            --data-urlencode 'scope=api-tenant' \
+            --data-urlencode 'grant_type=client_credentials' \
+            --data-urlencode 'client_id=${FOD_CLIENT_ID}' \
+            --data-urlencode 'client_secret=${FOD_CLIENT_SECRET}'
+            -w "%{http_code}" \
+            -o "get-api-oauth-output.json") # Saves the results of the query to a file
+
+          # Saves the POST request's status code
+          Generate_Token_Request_Status_Code=$(echo $Generate_FOD_Bearer_Token_Request | tr -d '\n' | sed -e 's/.*Status Code://')
+           
+          # Prints the status code of the POST Request
+          echo "Status code from the request of the FOD bearer token generation: ${Generate_Token_Request_Status_Code}"  
+          
+      env:
+        # Environment variables for this step
+        FOD_API_URL: "${{ secrets.FOD_API_BASE_URL }}"
         
   # Defines Java Configuration Job
   Define-Java-Configuration:
@@ -219,6 +257,22 @@ jobs:
                 done
               fi
             done
+          echo "Proceeding to check the builder of the C# repository..."
+
+          # Checks if the repository uses msbuild references on .csproj files
+          msbuild /nologo /t:ListReferences $(find . -name *.csproj) | grep Microsoft.Build.Framework
+          
+          if [[ $? -ne 0 ]]; then
+            echo "MSBuild references not found"
+
+            # Saves the builder name as dotnet because it has not MSBuild installed
+            echo "::set-output name=builder_name::dotnet"
+          else
+            echo "MSBuild references has been found"
+
+            # Saves the builder name as dotnet because it has MSBuild installed
+            echo "::set-output name=builder_name::msbuild"
+          fi
           else
             echo "No .Net project files have been found. This repository does not use .NET nor .NET Core technology stacks."
 
@@ -228,8 +282,6 @@ jobs:
             # Sets dotnet boolean variable to false because the repository not uses .NET nor .NET Core technology stacks
             echo "::set-output name=is_dotnetcore::false"
           fi
-
-          
           
       # Prints the dotnet info from previous steps
     - name: "Prints DotNet Version Info"
